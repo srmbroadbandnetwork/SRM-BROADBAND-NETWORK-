@@ -1,0 +1,75 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/>import { useEffect, useState } from "react"; import { initializeApp } from "firebase/app"; import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore"; import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+
+// 🔥 Firebase Config (replace with your own) const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID" };
+
+const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+
+export default function SRMISPSystem() { const [user, setUser] = useState(null); const [orders, setOrders] = useState([]);
+
+// order form const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [address, setAddress] = useState(""); const [pack, setPack] = useState("10 Mbps - 500 Taka");
+
+const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
+
+useEffect(() => { onAuthStateChanged(auth, (u) => { setUser(u); if (u) loadOrders(); }); }, []);
+
+async function submitOrder() { await addDoc(collection(db, "orders"), { name, phone, address, pack, time: new Date().toISOString() });
+
+alert("Order Submitted!");
+setName(""); setPhone(""); setAddress("");
+
+}
+
+async function loadOrders() { const snap = await getDocs(collection(db, "orders")); setOrders(snap.docs.map(d => d.data())); }
+
+async function login() { await signInWithEmailAndPassword(auth, email, password); }
+
+return ( <div style={{ fontFamily: "Arial", background: "#0b0f1a", color: "white", minHeight: "100vh", padding: 20 }}>
+
+<h1>SRM BROADBAND NETWORK - PRO SYSTEM</h1>
+
+  {/* USER ORDER SECTION */}
+  <h2>New Connection Order</h2>
+  <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} />
+  <input placeholder="Phone" value={phone} onChange={e=>setPhone(e.target.value)} />
+  <input placeholder="Address" value={address} onChange={e=>setAddress(e.target.value)} />
+
+  <select value={pack} onChange={e=>setPack(e.target.value)}>
+    <option>10 Mbps - 500 Taka</option>
+    <option>20 Mbps - 525 Taka</option>
+    <option>30 Mbps - 630 Taka</option>
+  </select>
+
+  <button onClick={submitOrder}>Submit Order</button>
+
+  {/* ADMIN LOGIN */}
+  {!user && (
+    <div style={{ marginTop: 30 }}>
+      <h2>Admin Login</h2>
+      <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+      <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+      <button onClick={login}>Login</button>
+    </div>
+  )}
+
+  {/* ADMIN PANEL */}
+  {user && (
+    <div style={{ marginTop: 30 }}>
+      <h2>Admin Panel</h2>
+      <button onClick={()=>signOut(auth)}>Logout</button>
+
+      <div>
+        {orders.map((o, i) => (
+          <div key={i} style={{ background: "#111827", padding: 10, margin: 10 }}>
+            <p>Name: {o.name}</p>
+            <p>Phone: {o.phone}</p>
+            <p>Address: {o.address}</p>
+            <p>Package: {o.pack}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+</div>
+
+); }
